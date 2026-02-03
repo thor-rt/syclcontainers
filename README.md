@@ -12,20 +12,23 @@ Docker containers for SYCL implementations.
 
 ### OpenCL Backend Selection (intel-sycl-base)
 
-The container includes both Intel OpenCL and PoCL backends. Intel OpenCL is used by default.
+The container includes both Intel OpenCL and PoCL backends. Intel OpenCL is used by default and PoCL is hidden from SYCL.
 
 ```bash
 # Use Intel OpenCL (default)
 ./my_sycl_app
 
-# Use PoCL instead
-export OCL_ICD_FILENAMES=/opt/pocl/lib/libpocl.so.2
-export SYCL_DEVICE_ALLOWLIST=''
-./my_sycl_app
+# Show all available OpenCL platforms (including PoCL)
+SYCL_DEVICE_ALLOWLIST='' sycl-ls
 
-# List available devices
-sycl-ls
+# Use PoCL instead of Intel OpenCL
+ONEAPI_DEVICE_SELECTOR='opencl:1' ./my_sycl_app
+
+# Or force PoCL only via OpenCL ICD
+OCL_ICD_FILENAMES=/opt/pocl/lib/libpocl.so.2 ./my_sycl_app
 ```
+
+**Note:** The Intel SYCL runtime filters non-Intel OpenCL platforms by default. Use `SYCL_DEVICE_ALLOWLIST=''` to see all platforms, or `ONEAPI_DEVICE_SELECTOR` to select a specific backend.
 
 ## Testing
 
