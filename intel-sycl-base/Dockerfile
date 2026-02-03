@@ -85,7 +85,7 @@ RUN mkdir -p /etc/OpenCL/vendors \
 ENV ONEAPI_ROOT=/opt/intel/oneapi
 ENV CMPLR_ROOT=${ONEAPI_ROOT}/compiler/latest
 ENV PATH=${CMPLR_ROOT}/bin:${PATH}
-ENV LD_LIBRARY_PATH=${CMPLR_ROOT}/lib
+ENV LD_LIBRARY_PATH=${CMPLR_ROOT}/lib:${ONEAPI_ROOT}/tbb/latest/lib:${ONEAPI_ROOT}/umf/latest/lib
 ENV CPATH=${CMPLR_ROOT}/include
 ENV LIBRARY_PATH=${CMPLR_ROOT}/lib
 
