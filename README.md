@@ -2,8 +2,62 @@ Docker containers for SYCL implementations.
 
 ## AdaptiveCpp Containers
 
-* **adaptivecpp-base**: Base AdaptiveCpp container with CPU backend
-* **adaptivecpp-hpc**: AdaptiveCpp with HDF5 and OpenMPI
+The AdaptiveCpp images are layered so the LLVM/Clang/CMake and HPC setup is
+defined once and reused:
+
+* **adaptivecpp-toolchain**: shared build environment — Ubuntu 24.04 + LLVM 18
+  (clang/llvm), Kitware CMake, Boost, Ninja. No AdaptiveCpp, no HPC libs. Used
+  as the `builder` stage of every image below.
+* **adaptivecpp-runtime**: `adaptivecpp-toolchain` + HPC libs (HDF5, OpenMPI,
+  GMP, TBB). Used as the final-stage base of every image below.
+* **adaptivecpp-base**: AdaptiveCpp built on the toolchain (CPU backend),
+  installed into the runtime image.
+* **adaptivecpp-hpc**: thin alias of `adaptivecpp-base` (the HPC libs now live
+  in `adaptivecpp-runtime`); kept for backward compatibility.
+* **adaptivecpp-hpc-cuda**: `adaptivecpp-base` + NVIDIA CUDA backend (slim CUDA
+  runtime slice copied from `nvidia/cuda:*-devel`).
+* **adaptivecpp-hpc-rocm**: `adaptivecpp-base` + AMD ROCm/HIP backend. ROCm is
+  installed from AMD's apt repo (only the components needed — like how
+  `intel-sycl-base` installs only the oneAPI compiler), not pulled from the
+  ~30 GB `rocm/dev *-complete` image, so the build stays CI-sized.
+* **adaptivecpp-hpc-multigpu**: dev/CI-only image with **both** the CUDA and
+  ROCm backends and both vendor runtime slices. Larger (~1.7-2.0 GB); pick the
+  backend at exec time via `ACPP_VISIBILITY_MASK` (`cuda` or `hip`). Not part
+  of the lean biweekly publish schedule.
+
+> **multigpu is built manually, not in CI** — it is a niche dev/CI image and is
+> excluded from the lean publish schedule. Build and push it locally:
+>
+> ```bash
+> ./build-local.sh multigpu
+> docker push ghcr.io/thor-rt/adaptivecpp-hpc-multigpu:main
+> ```
+>
+> All other images (`toolchain`, `runtime`, `base`, `hpc`, `hpc-cuda`,
+> `hpc-rocm`, `intel-*`) are built and pushed automatically by
+> `.github/workflows/docker-publish.yml`.
+
+### Build order / dependency graph
+
+```
+adaptivecpp-toolchain ──> adaptivecpp-runtime ──┬─> adaptivecpp-base ──> adaptivecpp-hpc
+        (FROM ubuntu)        (+ HPC libs)        ├─> adaptivecpp-hpc-cuda      (+ nvidia/cuda:*-devel)
+                                                 ├─> adaptivecpp-hpc-rocm      (+ rocm/dev-ubuntu:*-complete)
+                                                 └─> adaptivecpp-hpc-multigpu  (+ both vendor toolkits)
+```
+
+The downstream images accept `TOOLCHAIN_IMAGE` and `RUNTIME_IMAGE` build args
+so they can be pointed at locally built or alternative bases. The CUDA images
+accept `CUDA_IMAGE` (the `nvidia/cuda:*-devel` source) and the ROCm images
+accept `ROCM_VERSION` (the `repo.radeon.com/rocm/apt/<version>` to install).
+
+### ROCm runtime slice
+
+`adaptivecpp-hpc-rocm` copies only a minimal ROCm slice (HIP + HSA runtime,
+`libamd_comgr`, `amdgcn` device bitcode, `lld`, HIP headers). This is
+best-effort; verify on the target hardware with `acpp-info` / `ldd` and add
+libraries to the `COPY --from=rocm-toolkit` block if something is missing. On
+unsupported gfx targets you may need `HSA_OVERRIDE_GFX_VERSION` at runtime.
 
 ## Intel SYCL Containers
 

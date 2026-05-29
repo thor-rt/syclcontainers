@@ -1,20 +1,13 @@
-# Use the custom base image
+# AdaptiveCpp HPC image
+#
+# The HPC libraries (HDF5, OpenMPI, GMP, TBB) now live in adaptivecpp-runtime,
+# which adaptivecpp-base is built on top of, so this image no longer adds
+# anything. It is kept as a thin alias of adaptivecpp-base for backward
+# compatibility with consumers that pull adaptivecpp-hpc.
+#
+# Produces: ghcr.io/thor-rt/adaptivecpp-hpc:main
+
 ARG BASE_IMAGE=ghcr.io/thor-rt/adaptivecpp-base:main
 FROM ${BASE_IMAGE}
 
-# Install HDF5 and OpenMPI
-RUN apt-get update && apt-get install -y \
-    libhdf5-dev \
-    libhdf5-serial-dev \
-    hdf5-tools \
-    openmpi-bin \
-    libopenmpi-dev \
-    libgmp-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set environment variables, if necessary
-# For example, you might want to configure paths for MPI and HDF5
-ENV PATH="/usr/lib/openmpi/bin:${PATH}"
-
-# Command to keep the container running (optional)
 CMD ["bash"]
