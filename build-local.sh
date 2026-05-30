@@ -68,10 +68,3 @@ echo ""
 echo "Quick checks:"
 echo "  docker run --rm adaptivecpp-toolchain:local bash -c 'clang --version && cmake --version'"
 echo "  docker run --rm -v ./tests:/tests adaptivecpp-base:local /tests/run_tests.sh"
-
-if [ "$TARGET" = "multigpu" ] || [ "$TARGET" = "all" ]; then
-  echo ""
-  echo "NOTE: multigpu is a dev/CI-only image and is not built by the CI"
-  echo "pipeline. Publish it manually after building, e.g.:"
-  echo "  docker push ${REGISTRY_PREFIX}/adaptivecpp-hpc-multigpu:main"
-fi

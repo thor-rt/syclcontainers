@@ -161,12 +161,9 @@ jobs:
           done
 
   # Level 2: images built on toolchain (builder stage) + runtime (final stage),
-  # plus intel-sycl-hpc on intel-sycl-base.
-  #
-  # NOTE: adaptivecpp-hpc-multigpu is intentionally NOT built here. It is a
-  # dev/CI-only image (both CUDA + ROCm backends) and is not part of the lean
-  # publish schedule — build and push it manually with ./build-local.sh
-  # multigpu; see the README.
+  # plus intel-sycl-hpc on intel-sycl-base. adaptivecpp-hpc-multigpu carries
+  # both the CUDA and ROCm backends, so it pulls both vendor sources at build
+  # time (the largest job) — it runs on the ubuntu-75gb runner with disk prune.
   build-hpc:
     needs: build-runtime
     if: github.event_name != 'pull_request'
@@ -181,6 +178,9 @@ jobs:
             runtime: true
             large: true
           - path: adaptivecpp-hpc-rocm
+            runtime: true
+            large: true
+          - path: adaptivecpp-hpc-multigpu
             runtime: true
             large: true
           - path: intel-sycl-hpc

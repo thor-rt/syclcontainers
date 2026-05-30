@@ -20,22 +20,14 @@ defined once and reused:
   installed from AMD's apt repo (only the components needed — like how
   `intel-sycl-base` installs only the oneAPI compiler), not pulled from the
   ~30 GB `rocm/dev *-complete` image, so the build stays CI-sized.
-* **adaptivecpp-hpc-multigpu**: dev/CI-only image with **both** the CUDA and
-  ROCm backends and both vendor runtime slices. Larger (~1.7-2.0 GB); pick the
-  backend at exec time via `ACPP_VISIBILITY_MASK` (`cuda` or `hip`). Not part
-  of the lean biweekly publish schedule.
+* **adaptivecpp-hpc-multigpu**: image with **both** the CUDA and ROCm backends
+  and both vendor runtime slices. Pick the backend at exec time via
+  `ACPP_VISIBILITY_MASK` (`cuda` or `hip`). It pulls both vendor toolkits at
+  build time, so it is the largest/slowest CI job.
 
-> **multigpu is built manually, not in CI** — it is a niche dev/CI image and is
-> excluded from the lean publish schedule. Build and push it locally:
->
-> ```bash
-> ./build-local.sh multigpu
-> docker push ghcr.io/thor-rt/adaptivecpp-hpc-multigpu:main
-> ```
->
-> All other images (`toolchain`, `runtime`, `base`, `hpc`, `hpc-cuda`,
-> `hpc-rocm`, `intel-*`) are built and pushed automatically by
-> `.github/workflows/docker-publish.yml`.
+All images (`toolchain`, `runtime`, `base`, `hpc`, `hpc-cuda`, `hpc-rocm`,
+`hpc-multigpu`, `intel-*`) are built and pushed automatically by
+`.github/workflows/docker-publish.yml`.
 
 ### Build order / dependency graph
 
