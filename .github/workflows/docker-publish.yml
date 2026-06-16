@@ -62,7 +62,14 @@ jobs:
       - name: Run tests
         run: |
           if [ "${{ matrix.path }}" = "intel-sycl-base" ]; then
-            docker run --rm -v ${{ github.workspace }}/tests:/tests ${{ matrix.path }}:test \
+            # CI-only: the GitHub runner CPU (Azure AMD EPYC) is auto-detected as
+            # znver4, so PoCL's JIT emits instructions (AVX-512) the runner VM can't
+            # execute, crashing the PoCL backend test with SIGILL (exit 132). Pin
+            # PoCL's CPU codegen to a portable baseline for the test only. This does
+            # NOT change the shipped image: in production PoCL still auto-detects the
+            # host CPU natively (POCL_LLVM_CPU_NAME is unset there).
+            docker run --rm -e POCL_LLVM_CPU_NAME=x86-64-v3 \
+              -v ${{ github.workspace }}/tests:/tests ${{ matrix.path }}:test \
               bash -c "source /opt/intel/oneapi/setvars.sh && /tests/run_tests.sh"
           elif [ "${{ matrix.path }}" = "adaptivecpp-toolchain" ]; then
             docker run --rm ${{ matrix.path }}:test bash -c "clang --version && cmake --version"
@@ -233,7 +240,11 @@ jobs:
       - name: Run tests
         run: |
           if [ "${{ matrix.path }}" = "intel-sycl-hpc" ]; then
-            docker run --rm -v ${{ github.workspace }}/tests:/tests ${{ matrix.path }}:test \
+            # See build-base: pin PoCL CPU codegen to a portable baseline for the CI
+            # test only, avoiding the znver4/AVX-512 SIGILL on the runner VM. Shipped
+            # images are unchanged and auto-detect the host CPU natively.
+            docker run --rm -e POCL_LLVM_CPU_NAME=x86-64-v3 \
+              -v ${{ github.workspace }}/tests:/tests ${{ matrix.path }}:test \
               bash -c "source /opt/intel/oneapi/setvars.sh && /tests/run_tests.sh"
           else
             # AdaptiveCpp images: GHA runners have no GPU, so run_tests.sh
