@@ -29,6 +29,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Build PoCL from source with SPIR-V support for SYCL compatibility
 # Ubuntu's packaged PoCL lacks SPIR-V support required by Intel SYCL
+#
+# KERNELLIB_HOST_CPU_VARIANTS=distro builds the CPU kernel library for a set of
+# SSE/AVX variants and picks the right one at runtime from detected CPU features.
+# The default ("native") bakes a single library for the build machine's CPU (e.g.
+# znver4 with AVX-512); because this layer is cached and reused, that library then
+# runs on hosts without those instructions (e.g. a Zen 3 CI runner, or a VM that
+# masks AVX-512) and the kernel dies with SIGILL. "distro" is PoCL's portable build.
 ARG LLVM_VERSION=19
 ARG POCL_VERSION=v7.1
 
@@ -56,6 +63,7 @@ RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.
     && CC=clang-${LLVM_VERSION} CXX=clang++-${LLVM_VERSION} cmake /tmp/pocl \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/opt/pocl \
+        -DKERNELLIB_HOST_CPU_VARIANTS=distro \
         -DENABLE_SPIRV=ON \
         -DLLVM_SPIRV=/usr/bin/llvm-spirv-${LLVM_VERSION} \
         -DWITH_LLVM_CONFIG=/usr/bin/llvm-config-${LLVM_VERSION} \
