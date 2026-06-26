@@ -16,10 +16,19 @@ FROM ${TOOLCHAIN_IMAGE} AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG CLANG_VERSION=18
-ARG ACPP_VERSION=v25.02.0
 
-# Clone and build AdaptiveCpp (hipSYCL)
-RUN git clone --depth 1 --branch ${ACPP_VERSION} https://github.com/illuhad/hipSYCL.git /hipsycl
+# Set AdaptiveCpp version (commit on develop; pin to a SHA for reproducibility)
+# 783456863be6e793cf4a813bf2f2e23cea2d328e: develop tip as of 2026-06-26,
+# includes math built-in fixes from PR #1995.
+ARG ACPP_VERSION=783456863be6e793cf4a813bf2f2e23cea2d328e
+
+# Clone AdaptiveCpp at the pinned commit (shallow fetch by SHA)
+RUN mkdir /hipsycl \
+    && cd /hipsycl \
+    && git init -q \
+    && git remote add origin https://github.com/AdaptiveCpp/AdaptiveCpp.git \
+    && git fetch --depth 1 origin $ACPP_VERSION \
+    && git checkout -q FETCH_HEAD
 
 RUN cmake -S /hipsycl -B /hipsycl/build \
     -DCMAKE_INSTALL_PREFIX=/opt/hipsycl \
