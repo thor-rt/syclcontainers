@@ -21,7 +21,11 @@ FROM ${TOOLCHAIN_IMAGE} AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG CLANG_VERSION=18
-ARG ACPP_VERSION=v25.02.0
+# AdaptiveCpp pinned to a develop commit carrying the PR #1995 math built-in
+# fixes (SSCP log10/log2 miscompiled to natural log on the CUDA/HIP backends).
+# No release tag has it yet (v25.02.0 and v25.10.0 both predate the fix), so
+# fetch the SHA via a shallow clone-by-SHA instead of --branch.
+ARG ACPP_VERSION=783456863be6e793cf4a813bf2f2e23cea2d328e
 ARG ROCM_VERSION=6.4.1
 
 # Add AMD's ROCm apt repo and install only the build-time components:
@@ -54,7 +58,11 @@ ENV ROCM_PATH=/opt/rocm
 ENV PATH="/opt/rocm/bin:${PATH}"
 RUN echo "/opt/rocm/lib" > /etc/ld.so.conf.d/rocm.conf && ldconfig
 
-RUN git clone --depth 1 --branch ${ACPP_VERSION} https://github.com/illuhad/hipSYCL.git /hipsycl
+RUN mkdir /hipsycl && cd /hipsycl \
+    && git init -q \
+    && git remote add origin https://github.com/AdaptiveCpp/AdaptiveCpp.git \
+    && git fetch --depth 1 origin "${ACPP_VERSION}" \
+    && git checkout -q FETCH_HEAD
 
 RUN cmake -S /hipsycl -B /hipsycl/build \
     -DCMAKE_INSTALL_PREFIX=/opt/hipsycl \
