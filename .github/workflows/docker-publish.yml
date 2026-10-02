@@ -34,7 +34,7 @@ jobs:
         run: |
           python3 -m venv /tmp/workflow-checks
           /tmp/workflow-checks/bin/pip install PyYAML==6.0.3
-          /tmp/workflow-checks/bin/python -m unittest discover -s tests -p test_publish_workflow.py -v
+          /tmp/workflow-checks/bin/python -m unittest discover -s tests -p 'test_*.py' -v
 
   # Level 0: images with no in-repo image dependency.
   #   - adaptivecpp-toolchain : the shared LLVM/Clang/CMake build environment
@@ -417,3 +417,20 @@ jobs:
           done <<< "$TAGS"
           ((${#args[@]} > 0))
           docker buildx imagetools create --prefer-index=false "${args[@]}" "$IMAGE@$digest"
+
+  cleanup:
+    # Run after failed builds too; never overlap a publisher. [AI-Codex]
+    needs: [workflow-checks, build-base, build-runtime, build-hpc, build-alias, promote]
+    if: always() && !cancelled() && needs.workflow-checks.result == 'success' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retain rollback builds and remove expired build versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RETENTION_REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/retain_container_builds.py --repository "$RETENTION_REPOSITORY" --apply
