@@ -16,7 +16,7 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Define the default Clang version as an argument with a default value
-ARG CLANG_VERSION=18
+ARG CLANG_VERSION=19
 
 # Install necessary packages and add LLVM repository
 RUN apt-get update && apt-get install -y wget gnupg software-properties-common lsb-release \

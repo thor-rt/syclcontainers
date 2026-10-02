@@ -2,10 +2,14 @@ Docker containers for SYCL implementations.
 
 ## AdaptiveCpp Containers
 
+The AdaptiveCpp images use Clang 19 and pin AdaptiveCpp to
+`1170ba6a1500fb02c8afe4823e5b3785b5842f74`, the minimum commit required
+by THOR for the PR #1995 math fixes. [AI-Codex]
+
 The AdaptiveCpp images are layered so the LLVM/Clang/CMake and HPC setup is
 defined once and reused:
 
-* **adaptivecpp-toolchain**: shared build environment — Ubuntu 24.04 + LLVM 18
+* **adaptivecpp-toolchain**: shared build environment — Ubuntu 24.04 + LLVM 19
   (clang/llvm), Kitware CMake, Boost, Ninja. No AdaptiveCpp, no HPC libs. Used
   as the `builder` stage of every image below.
 * **adaptivecpp-runtime**: `adaptivecpp-toolchain` + HPC libs (HDF5, OpenMPI,

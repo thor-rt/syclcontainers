@@ -27,12 +27,10 @@ FROM ${CUDA_IMAGE} AS cuda-toolkit
 FROM ${TOOLCHAIN_IMAGE} AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG CLANG_VERSION=18
-# AdaptiveCpp pinned to a develop commit carrying the PR #1995 math built-in
-# fixes (SSCP log10/log2 miscompiled to natural log on the CUDA/HIP backends).
-# No release tag has it yet (v25.02.0 and v25.10.0 both predate the fix), so
-# fetch the SHA via a shallow clone-by-SHA instead of --branch.
-ARG ACPP_VERSION=783456863be6e793cf4a813bf2f2e23cea2d328e
+ARG CLANG_VERSION=19
+
+# THOR minimum: PR #1995 fixes, including PTX double log2/log10. [AI-Codex]
+ARG ACPP_VERSION=1170ba6a1500fb02c8afe4823e5b3785b5842f74
 ARG ROCM_VERSION=6.4.1
 
 # Bring in the CUDA toolkit for the build only (discarded with this stage)
