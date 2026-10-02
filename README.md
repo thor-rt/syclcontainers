@@ -55,7 +55,7 @@ they do not publish images or build the dependent image chain.
 ### Build retention
 
 After a main-branch publishing attempt, cleanup keeps the three newest build
-sets whose entire promotion job matrix passed. Failed or incomplete completed
+sets whose entire promotion job matrix passed. Failed or incompletely promoted
 attempts are kept for at least seven days. Active attempts are never removed.
 Cleanup only deletes package versions with exclusively `build-<run>-<attempt>`
 tags: any other tag, including `main`, `clang19`, `clang18-frozen`, release
