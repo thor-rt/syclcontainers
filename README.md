@@ -33,6 +33,25 @@ All images (`toolchain`, `runtime`, `base`, `hpc`, `hpc-cuda`, `hpc-rocm`,
 `hpc-multigpu`, `intel-*`) are built and pushed automatically by
 `.github/workflows/docker-publish.yml`.
 
+### Publishing
+
+Each publishing run stages every image under `build-<run-id>-<attempt>`.
+Downstream builds use that same tag for their toolchain, runtime, and base
+images. Smoke tests run against the published digest. Once the entire chain
+passes, a final job promotes those images without rebuilding them. [AI-Codex]
+
+Successful `main` builds update `main` for all images and `clang19` for
+AdaptiveCpp images. Release-tag builds publish version aliases instead;
+they do not move `main` or `clang19`. Clang 18 is no longer rebuilt, and
+existing `clang18-frozen` tags are never touched by this workflow.
+
+Publishing runs are serialized. Promotion across multiple packages is not
+atomic: a registry failure can leave some aliases updated. The unique build
+tags remain available to identify a complete image set. For a retry, choose
+**Re-run all jobs**, since a new attempt gets a new build tag. PR runs perform
+workflow checks and the existing standalone toolchain/Intel-base tests;
+they do not publish images or build the dependent image chain.
+
 ### Build order / dependency graph
 
 ```
