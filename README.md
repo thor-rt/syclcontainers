@@ -2,10 +2,14 @@ Docker containers for SYCL implementations.
 
 ## AdaptiveCpp Containers
 
+The AdaptiveCpp images use Clang 19 and pin AdaptiveCpp to
+`1170ba6a1500fb02c8afe4823e5b3785b5842f74`, the minimum commit required
+by THOR for the PR #1995 math fixes. [AI-Codex]
+
 The AdaptiveCpp images are layered so the LLVM/Clang/CMake and HPC setup is
 defined once and reused:
 
-* **adaptivecpp-toolchain**: shared build environment — Ubuntu 24.04 + LLVM 18
+* **adaptivecpp-toolchain**: shared build environment — Ubuntu 24.04 + LLVM 19
   (clang/llvm), Kitware CMake, Boost, Ninja. No AdaptiveCpp, no HPC libs. Used
   as the `builder` stage of every image below.
 * **adaptivecpp-runtime**: `adaptivecpp-toolchain` + HPC libs (HDF5, OpenMPI,
@@ -28,6 +32,52 @@ defined once and reused:
 All images (`toolchain`, `runtime`, `base`, `hpc`, `hpc-cuda`, `hpc-rocm`,
 `hpc-multigpu`, `intel-*`) are built and pushed automatically by
 `.github/workflows/docker-publish.yml`.
+
+### Publishing
+
+Each publishing run stages every image under `build-<run-id>-<attempt>`.
+Downstream builds use that same tag for their toolchain, runtime, and base
+images. Smoke tests run against the published digest. Once the entire chain
+passes, a final job promotes those images without rebuilding them. [AI-Codex]
+
+Successful `main` builds update `main` for all images and `clang19` for
+AdaptiveCpp images. Release-tag builds publish version aliases instead;
+they do not move `main` or `clang19`. Clang 18 is no longer rebuilt, and
+existing `clang18-frozen` tags are never touched by this workflow.
+
+Publishing runs are serialized. Promotion across multiple packages is not
+atomic: a registry failure can leave some aliases updated. The unique build
+tags remain available to identify a complete image set. For a retry, choose
+**Re-run all jobs**, since a new attempt gets a new build tag. PR runs perform
+workflow checks and the existing standalone toolchain/Intel-base tests;
+they do not publish images or build the dependent image chain.
+
+### Build retention
+
+After a main-branch publishing attempt, cleanup keeps the three newest build
+sets whose entire promotion job matrix passed. Failed or incompletely promoted
+attempts are kept for at least seven days. Active attempts are never removed.
+Cleanup only deletes package versions with exclusively `build-<run>-<attempt>`
+tags: any other tag, including `main`, `clang19`, `clang18-frozen`, release
+versions, or custom tags, protects the whole version. [AI-Codex]
+
+Untagged platform manifests and signature artifacts are deliberately retained;
+removing them indiscriminately can break images that are still tagged. Thus this
+policy limits build-tagged versions, but is not a complete registry garbage
+collector. Missing workflow history or an API error stops cleanup. The workflow
+must have admin access to each package for its `GITHUB_TOKEN` to delete versions;
+`packages: write` alone cannot grant that package-level access.
+
+Preview the plan without changing the registry:
+
+```bash
+python3 scripts/retain_container_builds.py --repository thor-rt/syclcontainers
+```
+
+Deletion is enabled only by the main-branch workflow using `--apply`. Publishing
+and cleanup share the workflow concurrency group. Avoid manually retagging images
+during cleanup: each candidate is rechecked before deletion, but the registry
+provides no atomic check-and-delete operation.
 
 ### Build order / dependency graph
 

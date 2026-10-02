@@ -15,12 +15,10 @@ ARG RUNTIME_IMAGE=ghcr.io/thor-rt/adaptivecpp-runtime:main
 FROM ${TOOLCHAIN_IMAGE} AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG CLANG_VERSION=18
+ARG CLANG_VERSION=19
 
-# Set AdaptiveCpp version (commit on develop; pin to a SHA for reproducibility)
-# 783456863be6e793cf4a813bf2f2e23cea2d328e: develop tip as of 2026-06-26,
-# includes math built-in fixes from PR #1995.
-ARG ACPP_VERSION=783456863be6e793cf4a813bf2f2e23cea2d328e
+# THOR minimum: PR #1995 fixes, including PTX double log2/log10. [AI-Codex]
+ARG ACPP_VERSION=1170ba6a1500fb02c8afe4823e5b3785b5842f74
 
 # Clone AdaptiveCpp at the pinned commit (shallow fetch by SHA)
 RUN mkdir /hipsycl \
