@@ -70,6 +70,41 @@ if [ -f /opt/pocl/lib/libpocl.so.2 ]; then
     unset OCL_ICD_FILENAMES SYCL_DEVICE_ALLOWLIST
 fi
 
+# Open MPI 5 built into /opt/openmpi (AdaptiveCpp images only). [AI-Claude]
+if [ "$CXX" = "acpp" ] && [ ! -x /opt/openmpi/bin/mpicxx ]; then
+    echo ""
+    echo "Test 3: FAILED - AdaptiveCpp image without /opt/openmpi"
+    FAILED=1
+elif [ -x /opt/openmpi/bin/mpicxx ]; then
+    echo ""
+    echo "=== Test 3: Open MPI ==="
+    mpi_check() {  # description, command...
+        local description=$1
+        shift
+        if "$@"; then
+            echo "  ok: $description"
+        else
+            echo "  FAILED: $description"
+            FAILED=1
+        fi
+    }
+    OMPI_INFO=$(ompi_info)
+    UCX_BUILD=$(ucx_info -b)
+    mpi_check "Open MPI 5" grep -q "Open MPI: 5\." <<< "$OMPI_INFO"
+    mpi_check "MPI_THREAD_MULTIPLE support" grep -q "MPI_THREAD_MULTIPLE: yes" <<< "$OMPI_INFO"
+    mpi_check "UCX transport (pml ucx)" grep -q "MCA pml: ucx" <<< "$OMPI_INFO"
+    mpi_check "UCX built with thread support" grep -qE "ENABLE_MT +1" <<< "$UCX_BUILD"
+    mpi_check "no Ubuntu Open MPI packages" bash -c "! dpkg -l | grep -qE '^ii +(openmpi-bin|libopenmpi)'"
+    mpicxx -O2 -pthread "$SCRIPT_DIR/mpi_threads.cpp" -o /tmp/mpi_threads
+    mpi_check "test links /opt/openmpi" bash -c "ldd /tmp/mpi_threads | grep -q '/opt/openmpi/lib/libmpi.so'"
+    ROOT_FLAG=()
+    if [ "$(id -u)" = 0 ]; then ROOT_FLAG=(--allow-run-as-root); fi
+    # set -e would end the script on a failing run before its output is shown.
+    OUTPUT=$(mpirun "${ROOT_FLAG[@]}" --oversubscribe -np 2 /tmp/mpi_threads 2>&1) || true
+    echo "$OUTPUT"
+    mpi_check "two ranks with two threads each" grep -q "^PASS" <<< "$OUTPUT"
+fi
+
 echo ""
 if [ $FAILED -eq 0 ]; then
     echo "All tests passed!"

@@ -36,7 +36,19 @@ RUN apt-get update && apt-get install -y wget gnupg software-properties-common l
     git \
     gdb \
     libstdc++6 \
-    libboost-all-dev \
+    # Boost without its MPI components: libboost-all-dev minus libboost-mpi-dev,
+    # libboost-mpi-python-dev and libboost-graph-parallel-dev, which pull in
+    # Ubuntu's Open MPI 4.1. adaptivecpp-runtime provides Open MPI 5.
+    libboost-dev libboost-tools-dev libboost-atomic-dev libboost-chrono-dev \
+    libboost-container-dev libboost-context-dev libboost-coroutine-dev \
+    libboost-date-time-dev libboost-exception-dev libboost-fiber-dev \
+    libboost-filesystem-dev libboost-graph-dev libboost-iostreams-dev \
+    libboost-json-dev libboost-locale-dev libboost-log-dev libboost-math-dev \
+    libboost-numpy-dev libboost-program-options-dev libboost-python-dev \
+    libboost-random-dev libboost-regex-dev libboost-serialization-dev \
+    libboost-stacktrace-dev libboost-system-dev libboost-test-dev \
+    libboost-thread-dev libboost-timer-dev libboost-type-erasure-dev \
+    libboost-url-dev libboost-wave-dev libboost-nowide-dev \
     python3-pip \
     clang-${CLANG_VERSION} \
     clang-tools-${CLANG_VERSION} \
