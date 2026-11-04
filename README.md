@@ -12,8 +12,9 @@ defined once and reused:
 * **adaptivecpp-toolchain**: shared build environment — Ubuntu 24.04 + LLVM 19
   (clang/llvm), Kitware CMake, Boost, Ninja. No AdaptiveCpp, no HPC libs. Used
   as the `builder` stage of every image below.
-* **adaptivecpp-runtime**: `adaptivecpp-toolchain` + HPC libs (HDF5, OpenMPI,
-  GMP, TBB). Used as the final-stage base of every image below.
+* **adaptivecpp-runtime**: `adaptivecpp-toolchain` + HPC libs (HDF5, Open MPI 5,
+  GMP, TBB). Used as the final-stage base of every image below. See
+  [Open MPI](#open-mpi).
 * **adaptivecpp-base**: AdaptiveCpp built on the toolchain (CPU backend),
   installed into the runtime image.
 * **adaptivecpp-hpc**: thin alias of `adaptivecpp-base` (the HPC libs now live
@@ -43,7 +44,15 @@ passes, a final job promotes those images without rebuilding them. [AI-Codex]
 Successful `main` builds update `main` for all images and `clang19` for
 AdaptiveCpp images. Release-tag builds publish version aliases instead;
 they do not move `main` or `clang19`. Clang 18 is no longer rebuilt, and
-existing `clang18-frozen` tags are never touched by this workflow.
+existing `clang18-frozen` tags are never touched by this workflow. The
+AdaptiveCpp images with Ubuntu's Open MPI 4.1.6 are kept the same way, as
+`openmpi4-frozen`.
+
+Release tags use the year and month, `vYYYY.M.N`, where `N` counts the
+releases in that month (for example `v2026.11.0`). They publish `YYYY.M.N`,
+`YYYY.M` and `YYYY`. A release tag can be pushed on a branch commit to build
+and test the full image chain before the branch is merged into `main`.
+[AI-Claude]
 
 Publishing runs are serialized. Promotion across multiple packages is not
 atomic: a registry failure can leave some aliases updated. The unique build
@@ -100,6 +109,25 @@ accept `ROCM_VERSION` (the `repo.radeon.com/rocm/apt/<version>` to install).
 best-effort; verify on the target hardware with `acpp-info` / `ldd` and add
 libraries to the `COPY --from=rocm-toolkit` block if something is missing. On
 unsupported gfx targets you may need `HSA_OVERRIDE_GFX_VERSION` at runtime.
+
+### Open MPI
+
+`adaptivecpp-runtime` builds Open MPI 5.0.11 and UCX 1.16.0 from source into
+`/opt/openmpi`. Ubuntu 24.04 packages Open MPI 4.1.6. With UCX and
+`MPI_THREAD_MULTIPLE`, its PMIx client can segfault when two threads of a rank
+first contact a peer at the same time. The source build has these properties:
+
+- UCX has thread support, so Open MPI accepts UCX under `MPI_THREAD_MULTIPLE`.
+- Open MPI uses its bundled PMIx and PRRTE. It supports InfiniBand and RoCE
+  (through UCX), libfabric (OFI) and Omni-Path (PSM2).
+- No Ubuntu Open MPI package is installed. The toolchain image therefore
+  installs Boost without its MPI components.
+
+On a Slurm cluster, launch MPI inside the container with `srun --mpi=pmix`.
+Open MPI 5 has no PMI-1 or PMI-2 support, and its PMIx client works with the
+PMIx v3 server of Slurm's `pmix_v3` plugin. On one node, `mpirun` inside the
+container also works. A host `mpirun` that starts container processes needs
+Open MPI 5 on the host. [AI-Claude]
 
 ## Intel SYCL Containers
 
