@@ -44,7 +44,15 @@ passes, a final job promotes those images without rebuilding them. [AI-Codex]
 Successful `main` builds update `main` for all images and `clang19` for
 AdaptiveCpp images. Release-tag builds publish version aliases instead;
 they do not move `main` or `clang19`. Clang 18 is no longer rebuilt, and
-existing `clang18-frozen` tags are never touched by this workflow.
+existing `clang18-frozen` tags are never touched by this workflow. The
+AdaptiveCpp images with Ubuntu's Open MPI 4.1.6 are kept the same way, as
+`openmpi4-frozen`.
+
+Release tags use the year and month, `vYYYY.M.N`, where `N` counts the
+releases in that month (for example `v2026.11.0`). They publish `YYYY.M.N`,
+`YYYY.M` and `YYYY`. A release tag can be pushed on a branch commit to build
+and test the full image chain before the branch is merged into `main`.
+[AI-Claude]
 
 Publishing runs are serialized. Promotion across multiple packages is not
 atomic: a registry failure can leave some aliases updated. The unique build
