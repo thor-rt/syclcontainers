@@ -28,7 +28,10 @@ RUN mkdir /hipsycl \
     && git fetch --depth 1 origin $ACPP_VERSION \
     && git checkout -q FETCH_HEAD
 
+# Match acpp's Clang driver: mixed OpenMP runtimes can break CPU binding. [AI-Codex]
 RUN cmake -S /hipsycl -B /hipsycl/build \
+    -DCMAKE_C_COMPILER=/usr/bin/clang-${CLANG_VERSION} \
+    -DCMAKE_CXX_COMPILER=/usr/bin/clang++-${CLANG_VERSION} \
     -DCMAKE_INSTALL_PREFIX=/opt/hipsycl \
     -DCMAKE_BUILD_TYPE=Release \
     -DWITH_CPU_BACKEND=ON \
@@ -53,7 +56,7 @@ ENV PATH="${HIPSYCL_INSTALL_DIR}/bin:${PATH}"
 ENV CPATH="${HIPSYCL_INSTALL_DIR}/include:${CPATH}"
 ENV LD_LIBRARY_PATH="${HIPSYCL_INSTALL_DIR}/lib:${LD_LIBRARY_PATH}"
 ENV LIBRARY_PATH="${HIPSYCL_INSTALL_DIR}/lib:${LIBRARY_PATH}"
-ENV CC=cc
+ENV CC=clang
 ENV CXX=acpp
 ENV LLVM_COV=/usr/local/bin/llvm-cov
 

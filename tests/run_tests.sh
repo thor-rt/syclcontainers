@@ -105,6 +105,25 @@ elif [ -x /opt/openmpi/bin/mpicxx ]; then
     mpi_check "two ranks with two threads each" grep -q "^PASS" <<< "$OUTPUT"
 fi
 
+# Host OpenMP and SYCL must share libomp and honor the CPU allocation. [AI-Codex]
+if [ "$(basename "$CXX")" = "acpp" ]; then
+    echo ""
+    echo "=== Test 4: OpenMP runtime and kernel affinity ==="
+    python3 "$SCRIPT_DIR/run_openmp_affinity.py"
+fi
+
+# Check the slim ROCm slice even on CPU-only CI runners. [AI-Codex]
+if [ -f /opt/hipsycl/lib/hipSYCL/librt-backend-hip.so ]; then
+    echo ""
+    echo "=== Test 5: HIP backend dependencies ==="
+    python3 - <<'PY'
+import ctypes
+import os
+ctypes.CDLL("/opt/hipsycl/lib/hipSYCL/librt-backend-hip.so", mode=os.RTLD_NOW)
+print("PASS: HIP backend and its shared-library dependencies load")
+PY
+fi
+
 echo ""
 if [ $FAILED -eq 0 ]; then
     echo "All tests passed!"

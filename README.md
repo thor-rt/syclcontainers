@@ -6,6 +6,25 @@ The AdaptiveCpp images use Clang 19 and pin AdaptiveCpp to
 `1170ba6a1500fb02c8afe4823e5b3785b5842f74`, the minimum commit required
 by THOR for the PR #1995 math fixes. [AI-Codex]
 
+AdaptiveCpp itself is built with that same Clang compiler, so its OpenMP
+CPU backend and Clang-built applications share LLVM `libomp`. Setting only
+`CLANG_EXECUTABLE_PATH` selects the application compiler but does not select
+the compiler that builds AdaptiveCpp. Mixing a GCC-built backend (`libgomp`)
+with a Clang/OpenMP application (`libomp`) can collapse CPU parallelism when
+thread binding is enabled; see the upstream
+[performance guide](https://adaptivecpp.github.io/AdaptiveCpp/performance/#with-omp-compilation-flow).
+The four AdaptiveCpp build recipes therefore set `CMAKE_C_COMPILER` and
+`CMAKE_CXX_COMPILER` explicitly. [AI-Codex]
+
+The supported application toolchain is `CXX=acpp` (Clang 19) and `CC=clang`
+(the toolchain's Clang 19 alternative), with LLVM `libomp` as the OpenMP
+runtime. OpenMP-enabled application code and dependencies must use this
+runtime. GCC-built libraries without OpenMP can be used when their ABI is
+compatible. Applications requiring GNU `libgomp` need a custom image with a
+matching AdaptiveCpp backend; GCC/OpenMP variants and mixed OpenMP runtimes
+are outside the supported configurations. The regression tests validate the
+provided LLVM stack. [AI-Codex]
+
 The AdaptiveCpp images are layered so the LLVM/Clang/CMake and HPC setup is
 defined once and reused:
 
@@ -110,6 +129,10 @@ best-effort; verify on the target hardware with `acpp-info` / `ldd` and add
 libraries to the `COPY --from=rocm-toolkit` block if something is missing. On
 unsupported gfx targets you may need `HSA_OVERRIDE_GFX_VERSION` at runtime.
 
+Both ROCm-capable images install the system `libdrm2` and `libdrm-amdgpu1`
+dependencies of the copied HSA runtime. The test suite loads the HIP backend
+with immediate symbol resolution even when no AMD GPU is available. [AI-Codex]
+
 ### Open MPI
 
 `adaptivecpp-runtime` builds Open MPI 5.0.11 and UCX 1.16.0 from source into
@@ -165,3 +188,12 @@ docker run --rm -v ./tests:/tests intel-sycl-base bash -c "source /opt/intel/one
 # AdaptiveCpp containers
 docker run --rm -v ./tests:/tests adaptivecpp-base /tests/run_tests.sh
 ```
+
+The AdaptiveCpp tests require at least two physical CPU cores. They compile
+both `generic` and `omp` test programs and exercise `OMP_PROC_BIND=close` and
+`spread`. After initializing host OpenMP, a background thread submits a real
+SYCL CPU kernel. The test checks numerical output, records the kernel's CPU
+and native thread IDs, verifies its restricted CPU allocation, and rejects
+multiple loaded OpenMP runtimes. The allocation excludes CPU 0 when possible.
+Run just this regression with `python3 /tests/run_openmp_affinity.py` inside
+the container. [AI-Codex]
