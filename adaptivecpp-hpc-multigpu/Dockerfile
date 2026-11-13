@@ -62,7 +62,10 @@ RUN mkdir /hipsycl && cd /hipsycl \
     && git fetch --depth 1 origin "${ACPP_VERSION}" \
     && git checkout -q FETCH_HEAD
 
+# Match acpp's Clang driver: mixed OpenMP runtimes can break CPU binding. [AI-Codex]
 RUN cmake -S /hipsycl -B /hipsycl/build \
+    -DCMAKE_C_COMPILER=/usr/bin/clang-${CLANG_VERSION} \
+    -DCMAKE_CXX_COMPILER=/usr/bin/clang++-${CLANG_VERSION} \
     -DCMAKE_INSTALL_PREFIX=/opt/hipsycl \
     -DCMAKE_BUILD_TYPE=Release \
     -DWITH_CPU_BACKEND=ON \
@@ -79,6 +82,11 @@ RUN cmake --build /hipsycl/build --target install
 # Stage 3: Runtime image + both vendor slices + AdaptiveCpp
 # ============================================================
 FROM ${RUNTIME_IMAGE}
+
+# The copied HSA runtime also needs the system DRM libraries. [AI-Codex]
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libdrm2 libdrm-amdgpu1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # --- Slim CUDA runtime slice (see adaptivecpp-hpc-cuda for rationale) ---
 COPY --from=cuda-toolkit /usr/local/cuda/lib64/libcudart*.so* /usr/local/cuda/lib64/

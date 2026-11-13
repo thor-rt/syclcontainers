@@ -62,7 +62,10 @@ RUN mkdir /hipsycl && cd /hipsycl \
     && git fetch --depth 1 origin "${ACPP_VERSION}" \
     && git checkout -q FETCH_HEAD
 
+# Match acpp's Clang driver: mixed OpenMP runtimes can break CPU binding. [AI-Codex]
 RUN cmake -S /hipsycl -B /hipsycl/build \
+    -DCMAKE_C_COMPILER=/usr/bin/clang-${CLANG_VERSION} \
+    -DCMAKE_CXX_COMPILER=/usr/bin/clang++-${CLANG_VERSION} \
     -DCMAKE_INSTALL_PREFIX=/opt/hipsycl \
     -DCMAKE_BUILD_TYPE=Release \
     -DWITH_CPU_BACKEND=ON \
@@ -78,6 +81,11 @@ RUN cmake --build /hipsycl/build --target install
 # Stage 2: Runtime image + slim ROCm slice + AdaptiveCpp
 # ============================================================
 FROM ${RUNTIME_IMAGE}
+
+# The copied HSA runtime also needs the system DRM libraries. [AI-Codex]
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libdrm2 libdrm-amdgpu1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy only what the AdaptiveCpp SSCP/HIP JIT path needs at runtime:
 # - libamdhip64 / libhsa-runtime64 : HIP + HSA runtime
