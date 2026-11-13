@@ -9,21 +9,30 @@ import tempfile
 def main():
     # Pick one hardware thread per physical core from the actual allocation.
     # Prefer CPUs other than zero to catch hard-coded placement assumptions.
+    available = sorted(os.sched_getaffinity(0), key=lambda value: (value == 0, value))
     cores = {}
-    for cpu in sorted(os.sched_getaffinity(0), key=lambda value: (value == 0, value)):
+    for cpu in available:
         topology = Path(f"/sys/devices/system/cpu/cpu{cpu}/topology")
         core = ((topology / "physical_package_id").read_text().strip(),
                 (topology / "core_id").read_text().strip())
         cores.setdefault(core, cpu)
     cpus = sorted(list(cores.values())[:4])
+    places = "cores"
     if len(cpus) < 2:
-        raise RuntimeError("OpenMP affinity regression requires at least two physical cores")
+        # Small CI runners may expose only SMT siblings. Distinct hardware
+        # threads still detect a kernel team confined to one logical CPU.
+        cpus = sorted(available[:4])
+        places = "threads"
+    if len(cpus) < 2:
+        raise RuntimeError(f"OpenMP affinity regression requires at least two allowed CPUs; "
+                           f"got {len(available)}")
     allocation = ",".join(map(str, cpus))
-    print(f"OpenMP affinity test allocation: {allocation}", flush=True)
+    print(f"OpenMP affinity test allocation: {allocation}; "
+          f"{len(cores)} physical core(s) available; OMP_PLACES={places}", flush=True)
     source = Path(__file__).with_name("openmp_affinity.cpp")
     compiler = os.environ.get("CXX", "acpp")
     env = dict(os.environ, ACPP_VISIBILITY_MASK="omp", OMP_NUM_THREADS=str(len(cpus)),
-               OMP_PLACES="cores", OMP_DYNAMIC="false")
+               OMP_PLACES=places, OMP_DYNAMIC="false")
     # Keep this regression independent of an invoking shell's affinity overrides.
     for variable in ("KMP_AFFINITY", "GOMP_CPU_AFFINITY", "KMP_HW_SUBSET"):
         env.pop(variable, None)
