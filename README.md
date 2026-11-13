@@ -16,6 +16,15 @@ thread binding is enabled; see the upstream
 The four AdaptiveCpp build recipes therefore set `CMAKE_C_COMPILER` and
 `CMAKE_CXX_COMPILER` explicitly. [AI-Codex]
 
+The supported application toolchain is `CXX=acpp` (Clang 19) and `CC=clang`
+(the toolchain's Clang 19 alternative), with LLVM `libomp` as the OpenMP
+runtime. OpenMP-enabled application code and dependencies must use this
+runtime. GCC-built libraries without OpenMP can be used when their ABI is
+compatible. Applications requiring GNU `libgomp` need a custom image with a
+matching AdaptiveCpp backend; GCC/OpenMP variants and mixed OpenMP runtimes
+are outside the supported configurations. The regression tests validate the
+provided LLVM stack. [AI-Codex]
+
 The AdaptiveCpp images are layered so the LLVM/Clang/CMake and HPC setup is
 defined once and reused:
 

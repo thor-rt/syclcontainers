@@ -123,7 +123,7 @@ ENV PATH="${HIPSYCL_INSTALL_DIR}/bin:/usr/local/cuda/bin:/opt/rocm/bin:${PATH}"
 ENV CPATH="${HIPSYCL_INSTALL_DIR}/include:${CPATH}"
 ENV LD_LIBRARY_PATH="${HIPSYCL_INSTALL_DIR}/lib:/usr/local/cuda/lib64:/opt/rocm/lib:${LD_LIBRARY_PATH}"
 ENV LIBRARY_PATH="${HIPSYCL_INSTALL_DIR}/lib:/usr/local/cuda/lib64:/opt/rocm/lib:${LIBRARY_PATH}"
-ENV CC=cc
+ENV CC=clang
 ENV CXX=acpp
 ENV LLVM_COV=/usr/local/bin/llvm-cov
 
