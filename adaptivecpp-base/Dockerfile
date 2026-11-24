@@ -17,15 +17,16 @@ FROM ${TOOLCHAIN_IMAGE} AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 ARG CLANG_VERSION=19
 
-# THOR minimum: PR #1995 fixes, including PTX double log2/log10. [AI-Codex]
-ARG ACPP_VERSION=1170ba6a1500fb02c8afe4823e5b3785b5842f74
+# THOR toolchain revision, shared across CPU and GPU variants.
+ARG ACPP_REPO=https://github.com/cbyrohl/AdaptiveCpp.git
+ARG ACPP_VERSION=f3faa7456e27f689620ab2bfe398a681f3c71091
 
 # Clone AdaptiveCpp at the pinned commit (shallow fetch by SHA)
 RUN mkdir /hipsycl \
     && cd /hipsycl \
     && git init -q \
-    && git remote add origin https://github.com/AdaptiveCpp/AdaptiveCpp.git \
-    && git fetch --depth 1 origin $ACPP_VERSION \
+    && git remote add origin "${ACPP_REPO}" \
+    && git fetch --depth 1 origin "${ACPP_VERSION}" \
     && git checkout -q FETCH_HEAD
 
 # Match acpp's Clang driver: mixed OpenMP runtimes can break CPU binding. [AI-Codex]

@@ -2,9 +2,14 @@ Docker containers for SYCL implementations.
 
 ## AdaptiveCpp Containers
 
-The AdaptiveCpp images use Clang 19 and pin AdaptiveCpp to
-`1170ba6a1500fb02c8afe4823e5b3785b5842f74`, the minimum commit required
-by THOR for the PR #1995 math fixes. [AI-Codex]
+The AdaptiveCpp images use Clang 19 and pin the
+[THOR toolchain fork](https://github.com/cbyrohl/AdaptiveCpp) to
+`f3faa7456e27f689620ab2bfe398a681f3c71091`. The build arguments
+`ACPP_REPO` and `ACPP_VERSION` select the source repository and revision.
+
+For generic OpenMP JIT workloads, set `ACPP_JITOPT_HOST_INLINING_POLICY=llvm`
+to use LLVM's inlining decisions for eligible helpers. The default policy is
+force inlining.
 
 AdaptiveCpp itself is built with that same Clang compiler, so its OpenMP
 CPU backend and Clang-built applications share LLVM `libomp`. Setting only
