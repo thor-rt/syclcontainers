@@ -35,7 +35,7 @@ class RetentionTests(unittest.TestCase):
     def test_protected_and_untagged_versions_survive(self):
         attempts = {'build-1-1': info(20)}
         versions = [version(i, ['build-1-1', tag]) for i, tag in enumerate(
-            ['main', 'clang19', 'clang18-frozen', 'latest', '1.2.3', 'custom'])]
+            ['main', 'clang21', 'clang19', 'clang18-frozen', 'latest', '1.2.3', 'custom'])]
         versions += [version(10, []), version(11, ['sha256-abc.sig']),
                      version(12, ['build-invalid'])]
         self.assertEqual(r.plan({'p': versions}, attempts, NOW), [])

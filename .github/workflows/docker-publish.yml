@@ -397,7 +397,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
           tags: |
             type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=clang19,enable=${{ github.ref == 'refs/heads/main' && startsWith(matrix.image, 'adaptivecpp-') }}
+            type=raw,value=clang21,enable=${{ github.ref == 'refs/heads/main' && startsWith(matrix.image, 'adaptivecpp-') }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}

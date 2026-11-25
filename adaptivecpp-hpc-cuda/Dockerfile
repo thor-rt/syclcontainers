@@ -21,7 +21,7 @@ FROM ${CUDA_IMAGE} AS cuda-toolkit
 FROM ${TOOLCHAIN_IMAGE} AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG CLANG_VERSION=19
+ARG CLANG_VERSION=21
 
 # THOR toolchain revision, shared across CPU and GPU variants.
 ARG ACPP_REPO=https://github.com/cbyrohl/AdaptiveCpp.git

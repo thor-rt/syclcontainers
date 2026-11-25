@@ -27,12 +27,12 @@ FROM ${CUDA_IMAGE} AS cuda-toolkit
 FROM ${TOOLCHAIN_IMAGE} AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG CLANG_VERSION=19
+ARG CLANG_VERSION=21
 
 # THOR toolchain revision, shared across CPU and GPU variants.
 ARG ACPP_REPO=https://github.com/cbyrohl/AdaptiveCpp.git
 ARG ACPP_VERSION=f3faa7456e27f689620ab2bfe398a681f3c71091
-ARG ROCM_VERSION=6.4.1
+ARG ROCM_VERSION=7.2.4
 
 # Bring in the CUDA toolkit for the build only (discarded with this stage)
 COPY --from=cuda-toolkit /usr/local/cuda /usr/local/cuda
@@ -74,6 +74,7 @@ RUN cmake -S /hipsycl -B /hipsycl/build \
     -DWITH_ROCM_BACKEND=ON \
     -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda \
     -DROCM_PATH=/opt/rocm \
+    -DROCM_CLANG_PATH=/opt/rocm/lib/llvm/bin/clang++ \
     -DLLVM_DIR=/usr/lib/llvm-${CLANG_VERSION} \
     -DCLANG_EXECUTABLE_PATH=/usr/bin/clang++-${CLANG_VERSION}
 
@@ -105,8 +106,9 @@ COPY --from=builder /opt/rocm/lib/libhsa-runtime64.so* /opt/rocm/lib/
 COPY --from=builder /opt/rocm/lib/libhiprtc*.so* /opt/rocm/lib/
 COPY --from=builder /opt/rocm/lib/libamd_comgr.so* /opt/rocm/lib/
 COPY --from=builder /opt/rocm/lib/librocprofiler-register.so* /opt/rocm/lib/
-COPY --from=builder /opt/rocm/amdgcn /opt/rocm/amdgcn
-COPY --from=builder /opt/rocm/llvm/bin/lld /opt/rocm/llvm/bin/lld
+# ROCm 7.2.4 keeps device bitcode within its Clang resource directory. [AI-Codex]
+COPY --from=builder /opt/rocm/lib/llvm/lib/clang/22/lib/amdgcn /opt/rocm/amdgcn
+COPY --from=builder /opt/rocm/lib/llvm/bin/lld /opt/rocm/lib/llvm/bin/lld
 COPY --from=builder /opt/rocm/include /opt/rocm/include
 
 RUN echo "/usr/local/cuda/lib64" > /etc/ld.so.conf.d/cuda.conf \

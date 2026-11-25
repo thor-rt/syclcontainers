@@ -20,12 +20,12 @@ ARG RUNTIME_IMAGE=ghcr.io/thor-rt/adaptivecpp-runtime:main
 FROM ${TOOLCHAIN_IMAGE} AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
-ARG CLANG_VERSION=19
+ARG CLANG_VERSION=21
 
 # THOR toolchain revision, shared across CPU and GPU variants.
 ARG ACPP_REPO=https://github.com/cbyrohl/AdaptiveCpp.git
 ARG ACPP_VERSION=f3faa7456e27f689620ab2bfe398a681f3c71091
-ARG ROCM_VERSION=6.4.1
+ARG ROCM_VERSION=7.2.4
 
 # Add AMD's ROCm apt repo and install only the build-time components:
 #   rocm-llvm        device clang/lld/llvm
@@ -38,7 +38,7 @@ ARG ROCM_VERSION=6.4.1
 #
 # The apt pin is required: Ubuntu 24.04 ships an older ROCm 5.7.1 in its
 # universe repo, and without preferring repo.radeon.com apt mixes 5.7.1 deps
-# into the 6.4.1 install (which breaks hip-config.cmake).
+# into the ROCm install (which breaks hip-config.cmake).
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
     && wget -qO - https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor -o /usr/share/keyrings/rocm.gpg \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${ROCM_VERSION} noble main" > /etc/apt/sources.list.d/rocm.list \
@@ -73,6 +73,7 @@ RUN cmake -S /hipsycl -B /hipsycl/build \
     -DWITH_CUDA_BACKEND=OFF \
     -DWITH_ROCM_BACKEND=ON \
     -DROCM_PATH=/opt/rocm \
+    -DROCM_CLANG_PATH=/opt/rocm/lib/llvm/bin/clang++ \
     -DLLVM_DIR=/usr/lib/llvm-${CLANG_VERSION} \
     -DCLANG_EXECUTABLE_PATH=/usr/bin/clang++-${CLANG_VERSION}
 
@@ -102,8 +103,9 @@ COPY --from=builder /opt/rocm/lib/libhsa-runtime64.so* /opt/rocm/lib/
 COPY --from=builder /opt/rocm/lib/libhiprtc*.so* /opt/rocm/lib/
 COPY --from=builder /opt/rocm/lib/libamd_comgr.so* /opt/rocm/lib/
 COPY --from=builder /opt/rocm/lib/librocprofiler-register.so* /opt/rocm/lib/
-COPY --from=builder /opt/rocm/amdgcn /opt/rocm/amdgcn
-COPY --from=builder /opt/rocm/llvm/bin/lld /opt/rocm/llvm/bin/lld
+# ROCm 7.2.4 keeps device bitcode within its Clang resource directory. [AI-Codex]
+COPY --from=builder /opt/rocm/lib/llvm/lib/clang/22/lib/amdgcn /opt/rocm/amdgcn
+COPY --from=builder /opt/rocm/lib/llvm/bin/lld /opt/rocm/lib/llvm/bin/lld
 COPY --from=builder /opt/rocm/include /opt/rocm/include
 RUN echo "/opt/rocm/lib" > /etc/ld.so.conf.d/rocm.conf \
     && ldconfig

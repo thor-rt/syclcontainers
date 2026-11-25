@@ -36,8 +36,9 @@ class PublishWorkflowTests(unittest.TestCase):
         self.assertFalse(WORKFLOW['concurrency']['cancel-in-progress'])
         self.assertIn("'publish'", WORKFLOW['concurrency']['group'])
         tags = next(s for s in JOBS['promote']['steps'] if s.get('id') == 'meta')['with']['tags']
-        self.assertIn('value=clang19', tags)
+        self.assertIn('value=clang21', tags)
         self.assertIn("startsWith(matrix.image, 'adaptivecpp-')", tags)
+        self.assertNotIn('value=clang19', tags)
         self.assertNotIn('clang18', tags)
         for name in ('build-runtime', 'build-hpc', 'build-alias'):
             self.assertEqual(JOBS[name]['if'], "github.event_name != 'pull_request'")
@@ -79,7 +80,7 @@ if sys.argv[1:4] == ['buildx', 'imagetools', 'inspect']:
     def test_promotion_keeps_digest_and_requested_tags(self):
         digest = 'sha256:' + 'a' * 64
         tags = ['example.invalid/adaptivecpp-base:main',
-                'example.invalid/adaptivecpp-base:clang19']
+                'example.invalid/adaptivecpp-base:clang21']
         result, calls = self.run_promotion(digest, '\n'.join(tags) + '\n')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(calls[-1], ['buildx', 'imagetools', 'create', '--prefer-index=false',
