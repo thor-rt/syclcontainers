@@ -2,7 +2,7 @@ Docker containers for SYCL implementations.
 
 ## AdaptiveCpp Containers
 
-The AdaptiveCpp images use Clang 19 and pin the
+The AdaptiveCpp images use Clang 21 and pin the
 [THOR toolchain fork](https://github.com/cbyrohl/AdaptiveCpp) to
 `f3faa7456e27f689620ab2bfe398a681f3c71091`. The build arguments
 `ACPP_REPO` and `ACPP_VERSION` select the source repository and revision.
@@ -21,8 +21,8 @@ thread binding is enabled; see the upstream
 The four AdaptiveCpp build recipes therefore set `CMAKE_C_COMPILER` and
 `CMAKE_CXX_COMPILER` explicitly. [AI-Codex]
 
-The supported application toolchain is `CXX=acpp` (Clang 19) and `CC=clang`
-(the toolchain's Clang 19 alternative), with LLVM `libomp` as the OpenMP
+The supported application toolchain is `CXX=acpp` (Clang 21) and `CC=clang`
+(the toolchain's Clang 21 alternative), with LLVM `libomp` as the OpenMP
 runtime. OpenMP-enabled application code and dependencies must use this
 runtime. GCC-built libraries without OpenMP can be used when their ABI is
 compatible. Applications requiring GNU `libgomp` need a custom image with a
@@ -33,7 +33,7 @@ provided LLVM stack. [AI-Codex]
 The AdaptiveCpp images are layered so the LLVM/Clang/CMake and HPC setup is
 defined once and reused:
 
-* **adaptivecpp-toolchain**: shared build environment — Ubuntu 24.04 + LLVM 19
+* **adaptivecpp-toolchain**: shared build environment — Ubuntu 24.04 + LLVM 21
   (clang/llvm), Kitware CMake, Boost, Ninja. No AdaptiveCpp, no HPC libs. Used
   as the `builder` stage of every image below.
 * **adaptivecpp-runtime**: `adaptivecpp-toolchain` + HPC libs (HDF5, Open MPI 5,
@@ -45,10 +45,9 @@ defined once and reused:
   in `adaptivecpp-runtime`); kept for backward compatibility.
 * **adaptivecpp-hpc-cuda**: `adaptivecpp-base` + NVIDIA CUDA backend (slim CUDA
   runtime slice copied from `nvidia/cuda:*-devel`).
-* **adaptivecpp-hpc-rocm**: `adaptivecpp-base` + AMD ROCm/HIP backend. ROCm is
-  installed from AMD's apt repo (only the components needed — like how
-  `intel-sycl-base` installs only the oneAPI compiler), not pulled from the
-  ~30 GB `rocm/dev *-complete` image, so the build stays CI-sized.
+* **adaptivecpp-hpc-rocm**: `adaptivecpp-base` with the AMD HIP backend and a
+  minimal ROCm 7.2.4 runtime. AMD's LLVM 22 toolchain supplies the HIP compiler
+  and device libraries used with AdaptiveCpp's LLVM 21 generic JIT.
 * **adaptivecpp-hpc-multigpu**: image with **both** the CUDA and ROCm backends
   and both vendor runtime slices. Pick the backend at exec time via
   `ACPP_VISIBILITY_MASK` (`cuda` or `hip`). It pulls both vendor toolkits at
@@ -65,12 +64,14 @@ Downstream builds use that same tag for their toolchain, runtime, and base
 images. Smoke tests run against the published digest. Once the entire chain
 passes, a final job promotes those images without rebuilding them. [AI-Codex]
 
-Successful `main` builds update `main` for all images and `clang19` for
+Successful `main` builds update `main` for all images and `clang21` for
 AdaptiveCpp images. Release-tag builds publish version aliases instead;
-they do not move `main` or `clang19`. Clang 18 is no longer rebuilt, and
-existing `clang18-frozen` tags are never touched by this workflow. The
-AdaptiveCpp images with Ubuntu's Open MPI 4.1.6 are kept the same way, as
-`openmpi4-frozen`.
+they do not move `main` or `clang21`.
+
+Clang 21 is the only compiler version rebuilt and tested for these images.
+The `clang19` and `clang18-frozen` tags keep their existing images for
+reproducibility. Frozen images receive no rebuilds or updates. The
+`openmpi4-frozen` tag keeps the images with Ubuntu's Open MPI 4.1.6.
 
 Release tags use the year and month, `vYYYY.M.N`, where `N` counts the
 releases in that month (for example `v2026.11.0`). They publish `YYYY.M.N`,
@@ -91,8 +92,8 @@ After a main-branch publishing attempt, cleanup keeps the three newest build
 sets whose entire promotion job matrix passed. Failed or incompletely promoted
 attempts are kept for at least seven days. Active attempts are never removed.
 Cleanup only deletes package versions with exclusively `build-<run>-<attempt>`
-tags: any other tag, including `main`, `clang19`, `clang18-frozen`, release
-versions, or custom tags, protects the whole version. [AI-Codex]
+tags: any other tag, including `main`, `clang21`, `clang19`, `clang18-frozen`,
+release versions, or custom tags, protects the whole version. [AI-Codex]
 
 Untagged platform manifests and signature artifacts are deliberately retained;
 removing them indiscriminately can break images that are still tagged. Thus this
