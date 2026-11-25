@@ -4,12 +4,17 @@ Docker containers for SYCL implementations.
 
 The AdaptiveCpp images use Clang 21 and pin the
 [THOR toolchain fork](https://github.com/cbyrohl/AdaptiveCpp) to
-`f3faa7456e27f689620ab2bfe398a681f3c71091`. The build arguments
+`8f86482dea401858be7d84057d0fbf41729925f5`. The build arguments
 `ACPP_REPO` and `ACPP_VERSION` select the source repository and revision.
 
 For generic OpenMP JIT workloads, set `ACPP_JITOPT_HOST_INLINING_POLICY=llvm`
 to use LLVM's inlining decisions for eligible helpers. The default policy is
 force inlining.
+
+Set `ACPP_JITOPT_HOST_CPU_TARGET` to select the LLVM CPU target for the
+generic OpenMP JIT, for example `nehalem` for an x86-64 target with SSE4.2.
+When the variable is unset, the JIT targets the execution CPU automatically.
+Each explicit target has its own kernel cache entry. [AI-Codex]
 
 AdaptiveCpp itself is built with that same Clang compiler, so its OpenMP
 CPU backend and Clang-built applications share LLVM `libomp`. Setting only

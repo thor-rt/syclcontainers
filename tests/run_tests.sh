@@ -105,6 +105,25 @@ elif [ -x /opt/openmpi/bin/mpicxx ]; then
     mpi_check "two ranks with two threads each" grep -q "^PASS" <<< "$OUTPUT"
 fi
 
+# Exercise the JIT override in the installed AdaptiveCpp runtime. [AI-Codex]
+if [ "$CXX" = "acpp" ]; then
+    echo ""
+    echo "=== AdaptiveCpp CPU JIT target override ==="
+    if (
+        CACHE=$(mktemp -d)
+        trap 'rm -rf -- "$CACHE"' EXIT
+        OUTPUT=$(ACPP_APPDB_DIR="$CACHE" ACPP_VISIBILITY_MASK=omp ACPP_DEBUG_LEVEL=3 \
+            ACPP_JITOPT_HOST_CPU_TARGET=nehalem /tmp/vector_add 2>&1) &&
+            grep -qx 'PASS' <<< "$OUTPUT" &&
+            grep -q -- ' -mcpu=nehalem' <<< "$OUTPUT"
+    ); then
+        echo "PASS: OpenMP JIT used the Nehalem target"
+    else
+        echo "FAIL: OpenMP JIT target override"
+        FAILED=1
+    fi
+fi
+
 # Host OpenMP and SYCL must share libomp and honor the CPU allocation. [AI-Codex]
 if [ "$(basename "$CXX")" = "acpp" ]; then
     echo ""

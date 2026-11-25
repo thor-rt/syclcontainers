@@ -31,7 +31,7 @@ ARG CLANG_VERSION=21
 
 # THOR toolchain revision, shared across CPU and GPU variants.
 ARG ACPP_REPO=https://github.com/cbyrohl/AdaptiveCpp.git
-ARG ACPP_VERSION=f3faa7456e27f689620ab2bfe398a681f3c71091
+ARG ACPP_VERSION=8f86482dea401858be7d84057d0fbf41729925f5
 ARG ROCM_VERSION=7.2.4
 
 # Bring in the CUDA toolkit for the build only (discarded with this stage)
